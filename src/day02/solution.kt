@@ -1,6 +1,11 @@
+package day02
+
+import runDaySolutions
 import kotlin.math.abs
 
 fun main() {
+    val day = (object {}).javaClass.packageName.takeLast(2).toInt()
+
     fun checkReport1(report: List<Int>): Boolean {
         if (report[1] == report[0]) {
             return false;
@@ -43,10 +48,10 @@ fun main() {
         return false
     }
 
-    fun part1(input: List<String>): Int {
+    fun part1(input: List<String>): Long {
         val list = input.map { it.split(" ").map { it2 -> it2.toInt() } }
 
-        var safe = 0
+        var safe = 0L
 
         for (report in list) {
             if (checkReport1(report)) {
@@ -57,10 +62,10 @@ fun main() {
         return safe
     }
 
-    fun part2(input: List<String>): Int {
+    fun part2(input: List<String>): Long {
         val list = input.map { it.split(" ").map { it2 -> it2.toInt() } }
 
-        var safe = 0
+        var safe = 0L
 
         for (report in list) {
             if (checkReport2(report)) {
@@ -71,16 +76,5 @@ fun main() {
         return safe
     }
 
-//    // Test if implementation meets criteria from the description, like:
-//    check(part1(listOf("test_input")) == 1)
-//
-    // Or read a large test input from the `src/Day01_test.txt` file:
-    val testInput = readInput("Day02_test")
-    check(part1(testInput) == 2)
-    check(part2(testInput) == 4)
-
-    // Read the input from the `src/Day01.txt` file.
-    val input = readInput("Day02")
-    part1(input).println()
-    part2(input).println()
+    runDaySolutions(day, ::part1, ::part2)
 }

@@ -3,3 +3,4 @@
 .kotlin/
 build
 local.properties
+/src/**/main.txt
