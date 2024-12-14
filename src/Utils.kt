@@ -25,6 +25,35 @@ fun Any?.println() = println(this)
  */
 fun getIdByXY(x: Int, y: Int) = "$x-$y"
 
+enum class Side {
+    UP, DOWN, LEFT, RIGHT
+}
+
+fun <T> printMatrix(matrix: Array<Array<T>>) {
+    for (row in matrix) {
+        println(row.joinToString(" "))
+    }
+}
+
+/**
+ * Returns vertical and horizontal neighbor coordinates
+ */
+fun getDirections(x: Int, y: Int): Array<Triple<Int, Int, Side>> {
+    return arrayOf(
+        Triple(x - 1, y, Side.UP),
+        Triple(x + 1, y, Side.DOWN),
+        Triple(x, y - 1, Side.LEFT),
+        Triple(x, y + 1, Side.RIGHT),
+    )
+}
+
+/**
+ * Checks if coordinates of a cell is in matrix area
+ */
+fun checkIfInMatrixArea(matrix: Array<Array<Char>>, i: Int, j: Int): Boolean {
+    return !(i < 0 || j < 0 || i >= matrix.size || j >= matrix[0].size)
+}
+
 /**
  * Run solution for test-case
  */
@@ -88,7 +117,7 @@ fun testSolutions(part: Int, solution: (input: List<String>) -> Long, testCases:
 /**
  * Run all tests and solutions
  */
-fun runDaySolutions(day: Int, solutionPart1: (input: List<String>) -> Long, solutionPart2: (input: List<String>) -> Long, skipPart2: Boolean = false) {
+fun runDaySolutions(day: Int, solutionPart1: (input: List<String>) -> Long, solutionPart2: (input: List<String>) -> Long, skipPart2: Boolean = false, skipTests: Boolean = false) {
     val dayStr = day.toString().padStart(2, '0')
 
     println()
@@ -101,26 +130,38 @@ fun runDaySolutions(day: Int, solutionPart1: (input: List<String>) -> Long, solu
     val testCases = getTestCases(testInput);
 
     println("------- Part 1 -------")
-    testSolutions(1, solutionPart1, testCases)
-    println("${testCases.size} testcase(s) passed")
+    if (!skipTests) {
+        testSolutions(1, solutionPart1, testCases)
+        println("${testCases.size} testcase(s) passed")
+    } else {
+        println("${testCases.size} testcase(s) skipped")
+    }
 
     val part1Result = solutionPart1(input)
     println()
     println("=> Result: $part1Result")
 
-    if (!skipPart2) {
-        println()
-        println("------- Part 2 -------")
-        testSolutions(2, solutionPart2, testCases)
-        println("${testCases.size} testcase(s) passed")
-
-        val part2Result = solutionPart2(input)
-        println()
-        println("=> Result: $part2Result")
-    } else {
+    if (skipPart2) {
         println()
         println("Part 2 skipped")
+        println()
+        println("------- All done -------")
+
+        return
     }
+
+    println()
+    println("------- Part 2 -------")
+    if (!skipTests) {
+        testSolutions(2, solutionPart2, testCases)
+        println("${testCases.size} testcase(s) passed")
+    } else {
+        println("${testCases.size} testcase(s) skipped")
+    }
+
+    val part2Result = solutionPart2(input)
+    println()
+    println("=> Result: $part2Result")
 
     println()
     println("------- All done -------")
