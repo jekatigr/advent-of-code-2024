@@ -47,6 +47,17 @@ fun getDirections(x: Int, y: Int): Array<Triple<Int, Int, Side>> {
     )
 }
 
+fun getSideFromChar(char: Char): Side {
+    when (char) {
+        '^' -> return Side.UP
+        '>' -> return Side.RIGHT
+        '<' -> return Side.LEFT
+        'v' -> return Side.DOWN
+    }
+
+    throw Error("Invalid char '$char'")
+}
+
 /**
  * Checks if coordinates of a cell is in matrix area
  */
