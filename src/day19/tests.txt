@@ -1,0 +1,45 @@
+1
+1
+ab, abcd, c
+
+abc
+===
+1
+1
+ab, abc
+
+ab
+===
+1
+8
+a, b, c, ab
+
+abcabcab
+===
+6
+16
+r, wr, b, g, bwu, rb, gb, br
+
+brwrr
+bggr
+gbbr
+rrbgbr
+ubwu
+bwurrg
+brgr
+bbrgwb
+===
+1
+8
+a, b, c, ab
+
+abcabcab
+===
+1
+1
+a, bc, ac, abc
+
+abcd
+aca
+abd
+abac

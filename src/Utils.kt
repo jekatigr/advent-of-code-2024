@@ -1,5 +1,3 @@
-import java.math.BigInteger
-import java.security.MessageDigest
 import kotlin.io.path.Path
 import kotlin.io.path.readText
 
@@ -9,24 +7,21 @@ import kotlin.io.path.readText
 fun readInput(name: String) = Path("./src/$name.txt").readText().trim().lines()
 
 /**
- * Converts string to md5 hash.
- */
-fun String.md5() = BigInteger(1, MessageDigest.getInstance("MD5").digest(toByteArray()))
-    .toString(16)
-    .padStart(32, '0')
-
-/**
- * The cleaner shorthand for printing output.
- */
-fun Any?.println() = println(this)
-
-/**
  * Creates String id by coordinates
  */
 fun getIdByXY(x: Int, y: Int) = "$x-$y"
 
 enum class Side {
-    UP, DOWN, LEFT, RIGHT
+    UP, DOWN, LEFT, RIGHT;
+
+    fun opposite(): Side {
+        return when (this) {
+            UP -> DOWN
+            DOWN -> UP
+            LEFT -> RIGHT
+            RIGHT -> LEFT
+        }
+    }
 }
 
 fun <T> printMatrix(matrix: Array<Array<T>>) {
@@ -38,12 +33,12 @@ fun <T> printMatrix(matrix: Array<Array<T>>) {
 /**
  * Returns vertical and horizontal neighbor coordinates
  */
-fun getDirections(x: Int, y: Int): Array<Triple<Int, Int, Side>> {
+fun getDirections(i: Int, j: Int): Array<Triple<Int, Int, Side>> {
     return arrayOf(
-        Triple(x - 1, y, Side.UP),
-        Triple(x + 1, y, Side.DOWN),
-        Triple(x, y - 1, Side.LEFT),
-        Triple(x, y + 1, Side.RIGHT),
+        Triple(i - 1, j, Side.UP),
+        Triple(i + 1, j, Side.DOWN),
+        Triple(i, j - 1, Side.LEFT),
+        Triple(i, j + 1, Side.RIGHT),
     )
 }
 
@@ -68,46 +63,84 @@ fun checkIfInMatrixArea(matrix: Array<Array<Char>>, i: Int, j: Int): Boolean {
 /**
  * Run solution for test-case
  */
-fun testSolution(part: Int, testCase: Int, solution: (input: List<String>) -> Long, testInput: List<String>, expectedTestResult: Long) {
-    val solutionTestResult = solution(testInput)
-    check(solutionTestResult == expectedTestResult) { "Part $part, testcase $testCase: returned value is $solutionTestResult instead of $expectedTestResult" }
+inline fun <reified T>testSolution(part: Int, testCaseNumber: Int, solution: (input: List<String>) -> T, testCase: TestCase<T>): Boolean {
+    val solutionTestResult = solution(testCase.input)
+
+    if (solutionTestResult == testCase.getTypedExpected<T>()) {
+        return true
+    }
+
+    val redColor = "\u001b[31m"
+    val reset = "\u001b[0m"
+
+    println("${redColor}Part $part, testcase $testCaseNumber:$reset returned value is $solutionTestResult instead of ${testCase.expectedString}")
+
+    return false
 }
 
 const val UNIT_TESTS_DIVIDER = "==="
 
+class TestCase<T>(var input: List<String>, val expectedString: String) {
+    inline fun <reified T> getTypedExpected(): T {
+        return when(T::class) {
+            Long::class -> expectedString.toLong()
+            Int::class -> expectedString.toInt()
+            String::class -> expectedString
+            else -> error("Converter unavailable for ${T::class}")
+        } as T
+    }
+}
+class TestCases<P1, P2> {
+    val part1 = mutableListOf<TestCase<P1>>()
+    val part2 = mutableListOf<TestCase<P2>>()
+
+    fun addToPart1(testCase: TestCase<P1>) {
+        part1.add(testCase)
+    }
+
+    fun addToPart2(testCase: TestCase<P2>) {
+        part2.add(testCase)
+    }
+}
 /**
  * Function will split testcases from a raw input
  */
-fun getTestCases(testInput: List<String>): List<Triple<List<String>, Long, Long>> {
-    val testCases = mutableListOf<Triple<List<String>, Long, Long>>()
+fun <P1, P2>getTestCases(testInput: List<String>): TestCases<P1, P2> {
+    val isVer2 = testInput[0] == "v2"
 
-    var testCase: Triple<MutableList<String>, Long, Long> = Triple(mutableListOf(), 0L, 0L)
-    var parseType = 1 // 1 - expected part 1, 2 - expected part 2, 3 - test case input strings
+    val testCases = TestCases<P1, P2>()
 
-    for (line in testInput) {
-        if (parseType == 1) {
-            testCase = testCase.copy(second = line.toLong())
-            parseType = 2
-            continue
+    if (!isVer2) {
+        var testCaseRaw: Triple<MutableList<String>, String, String> = Triple(mutableListOf(), "", "")
+        var parseType = 1 // 1 - expected part 1, 2 - expected part 2, 3 - test case input strings
+
+        for (line in testInput) {
+            if (parseType == 1) {
+                testCaseRaw = testCaseRaw.copy(second = line)
+                parseType = 2
+                continue
+            }
+
+            if (parseType == 2) {
+                testCaseRaw = testCaseRaw.copy(third = line)
+                parseType = 3
+                continue
+            }
+
+            if (line == UNIT_TESTS_DIVIDER) {
+                testCases.addToPart1(TestCase(testCaseRaw.first, testCaseRaw.second))
+                testCases.addToPart2(TestCase(testCaseRaw.first, testCaseRaw.third))
+                testCaseRaw = Triple(mutableListOf(), "", "")
+                parseType = 1
+                continue
+            }
+
+            testCaseRaw.first.add(line)
         }
 
-        if (parseType == 2) {
-            testCase = testCase.copy(third = line.toLong())
-            parseType = 3
-            continue
-        }
-
-        if (line == UNIT_TESTS_DIVIDER) {
-            testCases.add(testCase)
-            testCase = Triple(mutableListOf(), 0L, 0L)
-            parseType = 1
-            continue
-        }
-
-        testCase.first.add(line)
+        testCases.addToPart1(TestCase(testCaseRaw.first, testCaseRaw.second))
+        testCases.addToPart2(TestCase(testCaseRaw.first, testCaseRaw.third))
     }
-
-    testCases.add(testCase)
 
     return testCases
 }
@@ -115,20 +148,22 @@ fun getTestCases(testInput: List<String>): List<Triple<List<String>, Long, Long>
 /**
  * Run all test cases for test input
  */
-fun testSolutions(part: Int, solution: (input: List<String>) -> Long, testCases: List<Triple<List<String>, Long, Long>>) {
-    for ((index, value) in testCases.withIndex()) {
-        val (inputStrings, expectedPt1, expectedPt2) = value
+inline fun <reified T>testSolutions(part: Int, solution: (input: List<String>) -> T, testCases: List<TestCase<T>>) {
+    var passed = 0
 
-        val expected = if (part == 1) expectedPt1 else expectedPt2
-
-        testSolution(part, index + 1, solution, inputStrings, expected)
+    for ((index, testCase) in testCases.withIndex()) {
+        if (testSolution(part, index + 1, solution, testCase)) {
+            passed += 1
+        }
     }
+
+    check(passed == testCases.size) { "Part $part: $passed (out of ${testCases.size}) testcases passed." }
 }
 
 /**
  * Run all tests and solutions
  */
-fun runDaySolutions(day: Int, solutionPart1: (input: List<String>) -> Long, solutionPart2: (input: List<String>) -> Long, skipPart2: Boolean = false, skipTests: Boolean = false) {
+inline fun <reified P1, reified P2>runDaySolutions(day: Int, solutionPart1: (input: List<String>) -> P1, solutionPart2: (input: List<String>) -> P2, skipPart2: Boolean = false, skipTests: Boolean = false) {
     val dayStr = day.toString().padStart(2, '0')
 
     println()
@@ -138,14 +173,14 @@ fun runDaySolutions(day: Int, solutionPart1: (input: List<String>) -> Long, solu
     val testInput = readInput("day$dayStr/tests")
     val input = readInput("day$dayStr/main")
 
-    val testCases = getTestCases(testInput);
+    val testCases = getTestCases<P1, P2>(testInput)
 
     println("------- Part 1 -------")
     if (!skipTests) {
-        testSolutions(1, solutionPart1, testCases)
-        println("${testCases.size} testcase(s) passed")
+        testSolutions(1, solutionPart1, testCases.part1)
+        println("${testCases.part1.size} testcase(s) passed")
     } else {
-        println("${testCases.size} testcase(s) skipped")
+        println("${testCases.part1.size} testcase(s) skipped")
     }
 
     val part1Result = solutionPart1(input)
@@ -164,10 +199,10 @@ fun runDaySolutions(day: Int, solutionPart1: (input: List<String>) -> Long, solu
     println()
     println("------- Part 2 -------")
     if (!skipTests) {
-        testSolutions(2, solutionPart2, testCases)
-        println("${testCases.size} testcase(s) passed")
+        testSolutions(2, solutionPart2, testCases.part2)
+        println("${testCases.part2.size} testcase(s) passed")
     } else {
-        println("${testCases.size} testcase(s) skipped")
+        println("${testCases.part2.size} testcase(s) skipped")
     }
 
     val part2Result = solutionPart2(input)
