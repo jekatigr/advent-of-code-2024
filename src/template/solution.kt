@@ -17,5 +17,5 @@ fun main() {
         return result
     }
 
-    runDaySolutions(day, ::part1, ::part2, true)
+    runDaySolutions(day, ::part1, ::part2,  setOf(Skip.PART2_TESTS, Skip.PART2_SOLUTION))
 }

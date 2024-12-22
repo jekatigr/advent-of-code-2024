@@ -166,5 +166,5 @@ fun main() {
         return 0L
     }
 
-    runDaySolutions(day, ::part1, ::part2, false, true)
+    runDaySolutions(day, ::part1, ::part2)
 }

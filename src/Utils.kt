@@ -9,7 +9,8 @@ fun readInput(name: String) = Path("./src/$name.txt").readText().trim().lines()
 /**
  * Creates String id by coordinates
  */
-fun getIdByXY(x: Int, y: Int) = "$x-$y"
+fun <T> getIdByXY(x: T, y: T) = "${x}-${y}"
+fun <T> getIdByXYZ(x: T, y: T, z: T) = "${x}-${y}-${z}"
 
 enum class Side {
     UP, DOWN, LEFT, RIGHT;
@@ -22,11 +23,14 @@ enum class Side {
             RIGHT -> LEFT
         }
     }
-}
 
-fun <T> printMatrix(matrix: Array<Array<T>>) {
-    for (row in matrix) {
-        println(row.joinToString(" "))
+    fun next(i: Int, j: Int): Pair<Int, Int> {
+        return when (this) {
+            UP -> Pair(i - 1, j)
+            DOWN -> Pair(i + 1, j)
+            LEFT -> Pair(i, j - 1)
+            RIGHT -> Pair(i, j + 1)
+        }
     }
 }
 
@@ -59,6 +63,9 @@ fun getSideFromChar(char: Char): Side {
 fun checkIfInMatrixArea(matrix: Array<Array<Char>>, i: Int, j: Int): Boolean {
     return !(i < 0 || j < 0 || i >= matrix.size || j >= matrix[0].size)
 }
+fun checkIfInMatrixArea(matrix: Array<Array<Char>>, point: Pair<Int, Int>): Boolean {
+    return checkIfInMatrixArea(matrix, point.first, point.second)
+}
 
 /**
  * Run solution for test-case
@@ -79,6 +86,8 @@ inline fun <reified T>testSolution(part: Int, testCaseNumber: Int, solution: (in
 }
 
 const val UNIT_TESTS_DIVIDER = "==="
+const val EXPECTED_PART1_PREFIX = "1:"
+const val EXPECTED_PART2_PREFIX = "2:"
 
 class TestCase<T>(var input: List<String>, val expectedString: String) {
     inline fun <reified T> getTypedExpected(): T {
@@ -106,7 +115,7 @@ class TestCases<P1, P2> {
  * Function will split testcases from a raw input
  */
 fun <P1, P2>getTestCases(testInput: List<String>): TestCases<P1, P2> {
-    val isVer2 = testInput[0] == "v2"
+    val isVer2 = testInput[0].startsWith(EXPECTED_PART1_PREFIX) || testInput[0].startsWith(EXPECTED_PART2_PREFIX)
 
     val testCases = TestCases<P1, P2>()
 
@@ -140,6 +149,48 @@ fun <P1, P2>getTestCases(testInput: List<String>): TestCases<P1, P2> {
 
         testCases.addToPart1(TestCase(testCaseRaw.first, testCaseRaw.second))
         testCases.addToPart2(TestCase(testCaseRaw.first, testCaseRaw.third))
+
+        return testCases
+    }
+
+    var expectedPt1: String? = null
+    var expectedPt2: String? = null
+    var testLines = mutableListOf<String>()
+
+    for (line in testInput) {
+        if (line.startsWith(EXPECTED_PART1_PREFIX) || line.startsWith(EXPECTED_PART2_PREFIX)) {
+            if (line.startsWith(EXPECTED_PART1_PREFIX)) {
+                expectedPt1 = line.removePrefix(EXPECTED_PART1_PREFIX).trim()
+            }
+            if (line.startsWith(EXPECTED_PART2_PREFIX)) {
+                expectedPt2 = line.removePrefix(EXPECTED_PART2_PREFIX).trim()
+            }
+
+            continue
+        }
+
+        if (line == UNIT_TESTS_DIVIDER) {
+            if (expectedPt1 != null) {
+                testCases.addToPart1(TestCase(testLines, expectedPt1))
+            }
+            if (expectedPt2 != null) {
+                testCases.addToPart2(TestCase(testLines, expectedPt2))
+            }
+            expectedPt1 = null
+            expectedPt2 = null
+            testLines = mutableListOf()
+
+            continue
+        }
+
+        testLines.add(line)
+    }
+
+    if (expectedPt1 != null) {
+        testCases.addToPart1(TestCase(testLines, expectedPt1))
+    }
+    if (expectedPt2 != null) {
+        testCases.addToPart2(TestCase(testLines, expectedPt2))
     }
 
     return testCases
@@ -160,10 +211,16 @@ inline fun <reified T>testSolutions(part: Int, solution: (input: List<String>) -
     check(passed == testCases.size) { "Part $part: $passed (out of ${testCases.size}) testcases passed." }
 }
 
+enum class Skip {
+    PART1_TESTS,
+    PART1_SOLUTION,
+    PART2_TESTS,
+    PART2_SOLUTION
+}
 /**
  * Run all tests and solutions
  */
-inline fun <reified P1, reified P2>runDaySolutions(day: Int, solutionPart1: (input: List<String>) -> P1, solutionPart2: (input: List<String>) -> P2, skipPart2: Boolean = false, skipTests: Boolean = false) {
+inline fun <reified P1, reified P2>runDaySolutions(day: Int, solutionPart1: (input: List<String>) -> P1, solutionPart2: (input: List<String>) -> P2, skip: Set<Skip> = setOf()) {
     val dayStr = day.toString().padStart(2, '0')
 
     println()
@@ -176,39 +233,64 @@ inline fun <reified P1, reified P2>runDaySolutions(day: Int, solutionPart1: (inp
     val testCases = getTestCases<P1, P2>(testInput)
 
     println("------- Part 1 -------")
-    if (!skipTests) {
+    if (Skip.PART1_TESTS !in skip) {
         testSolutions(1, solutionPart1, testCases.part1)
         println("${testCases.part1.size} testcase(s) passed")
     } else {
         println("${testCases.part1.size} testcase(s) skipped")
     }
 
-    val part1Result = solutionPart1(input)
-    println()
-    println("=> Result: $part1Result")
-
-    if (skipPart2) {
-        println()
-        println("Part 2 skipped")
-        println()
-        println("------- All done -------")
-
-        return
+    if (Skip.PART1_SOLUTION !in skip) {
+        val part1Result = solutionPart1(input)
+        println("=> Main input result: $part1Result")
+    } else {
+        println("Part 1 main input run skipped")
     }
 
     println()
     println("------- Part 2 -------")
-    if (!skipTests) {
+    if (Skip.PART2_TESTS !in skip) {
         testSolutions(2, solutionPart2, testCases.part2)
         println("${testCases.part2.size} testcase(s) passed")
     } else {
         println("${testCases.part2.size} testcase(s) skipped")
     }
 
-    val part2Result = solutionPart2(input)
-    println()
-    println("=> Result: $part2Result")
+    if (Skip.PART2_SOLUTION !in skip) {
+        val part2Result = solutionPart2(input)
+        println("=> Main input result: $part2Result")
+    } else {
+        println("Part 2 main input run skipped")
+    }
 
     println()
     println("------- All done -------")
+}
+
+fun <T>printMatrix(matrix: Array<Array<T>>) {
+    for (row in matrix) {
+        println(row.joinToString(" "))
+    }
+}
+
+/**
+ * Pretty prints matrix with some visited nodes marked.
+ */
+fun <T>printMatrix(matrix: Array<Array<T>>, visited: Set<String>) {
+    for ((index, line) in matrix.withIndex()) {
+        for ((j, c) in line.withIndex()) {
+            val id = getIdByXY(index, j)
+
+            if (id in visited) {
+                print("0 ")
+            } else {
+                if (c.toString() == ".") {
+                    print("  ")
+                } else {
+                    print("$c ")
+                }
+            }
+        }
+        println()
+    }
 }

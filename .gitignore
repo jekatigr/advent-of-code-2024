@@ -4,3 +4,4 @@
 build
 local.properties
 /src/**/main.txt
+!/src/template/main.txt
